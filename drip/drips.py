@@ -187,8 +187,7 @@ class DripBase(object):
         try:
             return self._queryset
         except AttributeError:
-            self._queryset = self.apply_queryset_rules(self.queryset())\
-                                 .distinct()
+            self._queryset = self.apply_queryset_rules(self.queryset())
             return self._queryset
 
     def run(self):
@@ -210,9 +209,9 @@ class DripBase(object):
         target_user_ids = self.get_queryset().values_list('id', flat=True)
         exclude_user_ids = SentDrip.objects.filter(date__lt=conditional_now(),
                                                    drip=self.drip_model,
-                                                   user__id__in=target_user_ids)\
+                                                   user__id__in=list(target_user_ids))\
                                            .values_list('user_id', flat=True)
-        self._queryset = self.get_queryset().exclude(id__in=exclude_user_ids)
+        self._queryset = self.get_queryset().exclude(id__in=list(exclude_user_ids))
 
     def send(self):
         """
