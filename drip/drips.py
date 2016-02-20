@@ -45,7 +45,6 @@ class MandrillMessage(object):
         self.from_name = from_name
         self.from_email = from_email
         self.to_list = to_list
-        self.is_html = False
 
     def send():
         mandrill_client = mandrill.Mandrill(settings.MANDRILL_API_KEY)
@@ -53,11 +52,11 @@ class MandrillMessage(object):
             'from_email': self.from_email,
             'from_name': self.from_email,
             'subject': self.subject,
-            'text': self.plain,
-            'html': self.html,
+            'text': self.body_plain,
+            'html': self.body_html,
             'to': []
         }
-        for to in to_list:
+        for to in self.to_list:
             mandrill_message['to'].append({
                 'email': to,
                 'type': 'to'
