@@ -46,7 +46,7 @@ class MandrillMessage(object):
         self.from_email = from_email
         self.to_list = to_list
 
-    def send():
+    def send(self):
         mandrill_client = mandrill.Mandrill(settings.MANDRILL_API_KEY)
         mandrill_message = {
             'from_email': self.from_email,
