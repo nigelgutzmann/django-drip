@@ -1,5 +1,6 @@
 import operator
 import functools
+import mandrill
 
 from django.conf import settings
 from django.db.models import Q
@@ -34,6 +35,35 @@ def message_class_for(name):
     mod = import_module(mod_name)
     klass = getattr(mod, klass_name)
     return klass
+
+
+class MandrillMessage(object):
+    def __init__(self, subject, plain, html, from_name, from_email, to_list):
+        self.subject = subject
+        self.body_plain = plain
+        self.body_html = html
+        self.from_name = from_name
+        self.from_email = from_email
+        self.to_list = to_list
+        self.is_html = False
+
+    def send():
+        mandrill_client = mandrill.Mandrill(settings.MANDRILL_API_KEY)
+        mandrill_message = {
+            'from_email': self.from_email,
+            'from_name': self.from_email,
+            'subject': self.subject,
+            'text': self.plain,
+            'html': self.html,
+            'to': []
+        }
+        for to in to_list:
+            mandrill_message['to'].append({
+                'email': to,
+                'type': 'to'
+            })
+
+        result = mandrill_client.messages.send(message=mandrill_message, async=False)
 
 
 class DripMessage(object):
@@ -82,17 +112,14 @@ class DripMessage(object):
     @property
     def message(self):
         if not self._message:
-            if self.drip_base.from_email_name:
-                from_ = "%s <%s>" % (self.drip_base.from_email_name, self.drip_base.from_email)
-            else:
-                from_ = self.drip_base.from_email
-
-            self._message = EmailMultiAlternatives(
-                self.subject, self.plain, from_, [self.user.email])
-
-            # check if there are html tags in the rendered template
-            if len(self.plain) != len(self.body):
-                self._message.attach_alternative(self.body, 'text/html')
+            self._message = MandrillMessage(
+                self.subject,
+                self.plain,
+                self.body,
+                self.drip_base.from_email_name,
+                self.drip_base.from_email,
+                [self.user.email]
+            )
         return self._message
 
 
@@ -123,7 +150,6 @@ class DripBase(object):
             raise AttributeError('You must define a name.')
 
         self.now_shift_kwargs = kwargs.get('now_shift_kwargs', {})
-
 
     #########################
     ### DATE MANIPULATION ###
@@ -245,7 +271,6 @@ class DripBase(object):
                 logging.error("Failed to send drip %s to user %s: %s" % (self.drip_model.id, user, e))
 
         return count
-
 
     ####################
     ### USER DEFINED ###
